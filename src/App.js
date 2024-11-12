@@ -45,16 +45,13 @@ function calculateWinner(squares) {
 } 
 
 /**
- * Manages the board and updates the states of the sqaures.
- * With each turn, updates the clicked square, checks if there was a winner or if the square already contains a value.
- * Alerts the user to who the next player is or who won the game.
- * 
+ * Manages the status of the game.
+ * When a sqaure is clicked updates the squares based on who's turn it is, 
+ * and then hands the sqaures to the Game component.
  * 
  * @returns {JSX Element | null} returns either the updated tic-tac-toe board, or null
  */
-export default function Board() {
-    const [xIsNext, setXIsNext] = useState(true);
-    const [squares, setSquares] = useState(Array(9).fill(null));
+function Board({xIsNext, squares, onPlay}) {
     const [status, setStatus] = useState("Next player: X");
 
     function handClick(i) {
@@ -62,7 +59,8 @@ export default function Board() {
 
         const nextSquares = squares.slice();
         nextSquares[i] = xIsNext ? "X" : "O";
-        setSquares(nextSquares);
+
+        onPlay(nextSquares);
 
         const winner = calculateWinner(nextSquares);
         if (winner) {
@@ -70,26 +68,6 @@ export default function Board() {
         } else {
             setStatus(`Next player: ${xIsNext ? "O" : "X"}`);
         }
-
-        setXIsNext(!xIsNext);
-
-        // if (xIsNext === true) {
-        //     nextSquares[i] = "X";
-        //     setStatus("Next player: O");
-        // } else {
-        //     nextSquares[i] = "O";
-        //     setStatus("Next player: X");
-        // }
-
-        // winner = calculateWinner(nextSquares);
-        // if (winner != null) {
-        //     setStatus("Winner: " + winner);
-        //     setSquares(nextSquares);
-        //     return;
-        // }
-
-        // setSquares(nextSquares);
-        // setXIsNext(!xIsNext);
     }
 
     return (
@@ -111,5 +89,56 @@ export default function Board() {
                 <Square value={squares[8]} onSquareClick={() => handClick(8)} />
             </div>
         </>
+    );
+}
+
+/**
+ * Builds the game board and keeps a collection of the moves that have been made.
+ * Manages what happens when you go back to a previous move made.
+ * 
+ * @returns {JSX Elements | null} the game which wraps the board and history of moves made
+ */
+export default function Game() {
+    const [history, setHistroy] = useState([Array(9).fill(null)]);
+    const [currentMove, setCurrentMove] = useState(0);
+    const currentSquares = history[currentMove];
+    const xIsNext = currentMove % 2 === 0;
+
+    // updates the history, and the current move
+    function handlePlay(nextSquares) {
+        const nextHistory = [...history.slice(0, currentMove + 1), nextSquares];
+        setHistroy(nextHistory);
+        setCurrentMove(nextHistory.length - 1);
+    }
+
+    // updates the board to the historical move selected
+    function jumpTo(nextMove) {
+        setCurrentMove(nextMove);
+    }
+
+
+    const moves = history.map((sqaures, move) => {
+        let description;
+        if (move > 0) {
+            description = `Go to move # ${move}`;
+        } else {
+            description = "Go to start of game";
+        }
+        return (
+            <li key={move}> 
+                <button onClick={() => jumpTo(move)}>{description}</button>
+            </li>
+        );
+    })
+
+    return (
+        <div className="game">
+            <div className="game-board">
+                <Board xIsNext={xIsNext} squares={currentSquares} onPlay={handlePlay} />
+            </div>
+            <div className="game-info">
+                <ol>{moves}</ol>
+            </div>
+        </div>
     );
 }
